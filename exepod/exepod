@@ -1,0 +1,23 @@
+#!/bin/bash
+
+set -e
+set -o pipefail
+
+getpod() {
+  POD_NAMES=$(kubectl get pods -o name | cut -d / -f 2)
+
+  echo "$POD_NAMES" | head -n $1 | tail -n 1
+}
+
+podcontainer() {
+  POD=$1
+  POD_INITIAL_NAME=$(echo $POD | cut -d - -f 1)
+  kubectl get pods $POD -o jsonpath='{.spec.containers[*].name}' | tr " " "\n" | grep $POD_INITIAL_NAME 2> /dev/null
+}
+
+POD=$(getpod $1)
+POD_CONTAINER=$(podcontainer $POD)
+shift
+
+echo Getting into pod $POD on container $POD_CONTAINER
+kubectl exec -ti $POD -c $POD_CONTAINER -- $@
